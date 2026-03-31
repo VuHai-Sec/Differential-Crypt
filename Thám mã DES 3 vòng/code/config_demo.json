@@ -1,0 +1,15 @@
+{
+  "target_round": 3,
+  "pairs_per_sbox": 16,
+  "pair_mode": "predefined",
+  "require_equal_l0_demo": true,
+  "candidate_policy": {
+    "mode": "max",
+    "top_n": 5,
+    "min_score_ratio": 1.0
+  },
+  "roundkey_prune_limit": 2048,
+  "verify_plaintexts": 4,
+  "random_seed": 20260330,
+  "debug": true
+}

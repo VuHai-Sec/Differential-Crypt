@@ -1,0 +1,27 @@
+{
+  "verification_plaintexts": [
+    "82B468AFB9FEDCFC",
+    "A6C9FB04EB675843",
+    "D99837E06CCC69A4",
+    "DF951B4760DCEFC4"
+  ],
+  "verification_log": [
+    {
+      "step": 1,
+      "plaintext": "82B468AFB9FEDCFC",
+      "oracle_ciphertext": "2162D0B5D999C74D",
+      "before": 256,
+      "after": 1
+    }
+  ],
+  "survivors": [
+    {
+      "key64": 18374402593235792572,
+      "key_hex": "FEFEFDCE89D5F2BC",
+      "source_k3_hexes": [
+        "AB7F9FF9FA2B"
+      ],
+      "best_source_score": 128
+    }
+  ]
+}
