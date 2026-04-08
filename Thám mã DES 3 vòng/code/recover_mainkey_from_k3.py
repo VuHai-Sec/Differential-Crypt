@@ -1,4 +1,4 @@
-"""Recover main-key candidates from assembled K3 candidates."""
+"""Khôi phục các ứng viên khoá chính từ các ứng viên K3 đã được ghép."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from key_schedule_inverse import invert_round3_subkey
 
 
 def recover_main_keys_from_k3_candidates(k3_candidates: List[Dict[str, object]]) -> List[Dict[str, object]]:
-    """Invert the round-3 subkeys into deduplicated main-key candidates."""
+    """Đảo ngược các khoá con vòng 3 thành các ứng viên khoá chính đã loại trùng."""
     recovered: Dict[int, Dict[str, object]] = {}
     for candidate in k3_candidates:
         round_key = int(candidate["k3"])

@@ -1,4 +1,4 @@
-"""Run the K3 differential attack over all 8 DES S-boxes."""
+"""Chạy tấn công vi sai để tìm K3 trên cả 8 S-box của DES."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from pair_generator import PairRecord, generate_many_pairs
 
 
 def attack_all_sboxes(oracle, config: Dict[str, object], ddt_data: Dict[str, List[List[int]]]) -> Dict[str, object]:
-    """Generate pairs and attack all S-boxes independently."""
+    """Sinh các cặp và tấn công độc lập trên tất cả các S-box."""
     pair_mode = str(config.get("pair_mode", "predefined"))
     pairs_per_sbox = int(config.get("pairs_per_sbox", 12))
     seed = int(config.get("random_seed", 0))

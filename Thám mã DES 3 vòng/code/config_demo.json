@@ -11,5 +11,5 @@
   "roundkey_prune_limit": 2048,
   "verify_plaintexts": 4,
   "random_seed": 20260330,
-  "debug": true
+  "debug": false
 }

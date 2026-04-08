@@ -41,8 +41,8 @@ Lưu ý:
 - `artifacts/reports/k3_candidates.json`: các ứng viên `K3` sau bước ghép.
 - `artifacts/reports/main_key_candidates.json`: các main-key candidates trước verify.
 - `artifacts/reports/verify_result.json`: log verify và các candidate còn sống.
-- `artifacts/reports/demo_summary.json`: tóm tắt gọn.
-- `artifacts/reports/full_report.json`: báo cáo đầy đủ.
+- `artifacts/reports/demo_summary.json`: tóm tắt gọn, có cả `runtime_seconds`.
+- `artifacts/reports/full_report.json`: báo cáo đầy đủ, có cả `runtime_seconds`.
 
 ## Cách chạy
 
@@ -51,6 +51,12 @@ Yêu cầu: Python 3, không cần thư viện ngoài.
 ```bash
 python demo_k3_recovery.py
 ```
+
+Sau khi chạy xong, chương trình sẽ in báo cáo cuối trên console, bao gồm:
+
+- số lượng `K3 candidates`,
+- số lượng `main-key candidates` trước và sau verify,
+- tổng thời gian chạy toàn bộ thực nghiệm, tính bằng giây qua dòng `Total runtime (seconds)`.
 
 ## Debug mode
 
@@ -71,6 +77,7 @@ Khi `debug = true`, chương trình in/log thêm:
 - top candidates,
 - số lượng `K3 candidates`,
 - số lượng `main-key candidates` trước và sau verify,
+- tổng thời gian chạy trong báo cáo cuối,
 - các assumption / simplification đang dùng.
 
 Khi `debug = false`, output console gọn hơn, nhưng artifacts JSON vẫn được lưu.

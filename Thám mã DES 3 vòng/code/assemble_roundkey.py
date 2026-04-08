@@ -1,4 +1,4 @@
-"""Assemble 48-bit K3 candidates from per-S-box candidate sets."""
+"""Ghép các ứng viên K3 48 bit từ các tập ứng viên theo từng Sbox."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from bit_utils import int_to_hex
 
 
 def assemble_k3_candidates(results_by_sbox: Dict[str, Dict[str, object]], prune_limit: int) -> List[Dict[str, object]]:
-    """Beam-assemble round-key candidates from eight 6-bit candidate lists."""
+    """Ghép theo beam các ứng viên khoá vòng từ tám danh sách ứng viên 6 bit."""
     partials: List[Dict[str, object]] = [{"k3": 0, "score": 0, "parts": []}]
     for sbox_id in range(1, 9):
         candidates = list(results_by_sbox[str(sbox_id)]["top_candidates"])

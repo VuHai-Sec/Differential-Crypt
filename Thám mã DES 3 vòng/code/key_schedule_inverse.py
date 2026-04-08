@@ -1,4 +1,4 @@
-"""Invert the DES key schedule from a round-3 subkey candidate."""
+"""Đảo ngược lịch khoá DES từ một ứng viên khoá con vòng 3."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ PC2_MISSING_POSITIONS = [position for position in range(1, 57) if position not i
 
 
 def invert_pc2(round_key48: int) -> List[int]:
-    """Enumerate all 56-bit round-state candidates that map to a PC-2 output."""
+    """Liệt kê mọi ứng viên trạng thái vòng 56 bit ánh xạ tới một đầu ra PC-2."""
     known_bits = [None for _ in range(56)]
     for output_index, source_position in enumerate(PC2, start=1):
         bit = (round_key48 >> (48 - output_index)) & 1
@@ -30,7 +30,7 @@ def invert_pc2(round_key48: int) -> List[int]:
 
 
 def invert_pc1(cd0: int) -> int:
-    """Place a 56-bit PC-1 output back into a 64-bit DES key with zero parity bits."""
+    """Đặt đầu ra PC-1 56 bit trở lại khoá DES 64 bit với các bit parity bằng 0."""
     key_bits = [0 for _ in range(64)]
     for output_index, source_position in enumerate(PC1, start=1):
         bit = (cd0 >> (56 - output_index)) & 1
@@ -42,7 +42,7 @@ def invert_pc1(cd0: int) -> int:
 
 
 def invert_round3_subkey(round_key48: int) -> List[int]:
-    """Recover all 64-bit main-key candidates consistent with K3."""
+    """Khôi phục mọi ứng viên khoá chính 64 bit phù hợp với K3."""
     recovered = set()
     for cd3 in invert_pc2(round_key48):
         c3 = (cd3 >> 28) & ((1 << 28) - 1)

@@ -32,6 +32,7 @@ def build_summary(
     k3_candidates: Any,
     main_key_candidates: Any,
     verify_result: Dict[str, Any],
+    runtime_seconds: float,
 ) -> Dict[str, Any]:
     """Build a compact summary object for the final artifact."""
     return {
@@ -44,6 +45,7 @@ def build_summary(
         "main_key_candidate_count_before_verify": len(main_key_candidates),
         "main_key_candidate_count_after_verify": len(verify_result["survivors"]),
         "verified_keys": [candidate["key_hex"] for candidate in verify_result["survivors"]],
+        "runtime_seconds": round(runtime_seconds, 6),
     }
 
 
@@ -54,6 +56,7 @@ def print_final_report(summary: Dict[str, Any]) -> None:
     print(f"K3 candidates after assembly: {summary['k3_candidate_count']}")
     print(f"Main-key candidates before verify: {summary['main_key_candidate_count_before_verify']}")
     print(f"Main-key candidates after verify: {summary['main_key_candidate_count_after_verify']}")
+    print(f"Total runtime (seconds): {summary['runtime_seconds']:.6f}")
     if summary["verified_keys"]:
         print("Verified main-key candidates:")
         for key_hex in summary["verified_keys"]:

@@ -1,4 +1,4 @@
-"""Reduced-round DES core used throughout the demo."""
+"""Lõi DES rút gọn được dùng xuyên suốt trong bản demo."""
 
 from __future__ import annotations
 
@@ -19,14 +19,14 @@ from des_tables import E, FP, IP, P, PC1, PC2, ROUND_SHIFTS, S_BOXES
 
 
 def sbox_lookup(sbox_id: int, six_bits: int) -> int:
-    """Apply one DES S-box."""
+    """Áp dụng một S-box của DES."""
     row = ((six_bits & 0b100000) >> 4) | (six_bits & 0b1)
     column = (six_bits >> 1) & 0b1111
     return S_BOXES[sbox_id - 1][row][column]
 
 
 def sbox_substitution(expanded_48: int) -> int:
-    """Apply all 8 DES S-boxes to a 48-bit input."""
+    """Áp dụng cả 8 S-box của DES lên một đầu vào 48 bit."""
     output = 0
     for sbox_id in range(1, 9):
         chunk = extract_sbox_chunk(expanded_48, sbox_id)
@@ -35,7 +35,7 @@ def sbox_substitution(expanded_48: int) -> int:
 
 
 def round_function(right32: int, round_key48: int) -> int:
-    """DES round function F."""
+    """Hàm vòng F của DES."""
     expanded = permute(right32, E, 32)
     mixed = expanded ^ round_key48
     sbox_out = sbox_substitution(mixed)
@@ -43,7 +43,7 @@ def round_function(right32: int, round_key48: int) -> int:
 
 
 def generate_round_keys(key64: int, rounds: int = 3) -> List[int]:
-    """Generate the first DES round keys."""
+    """Sinh các khoá vòng đầu tiên của DES."""
     permuted_key = permute(key64, PC1, 64)
     c = (permuted_key >> 28) & ((1 << 28) - 1)
     d = permuted_key & ((1 << 28) - 1)
@@ -58,7 +58,7 @@ def generate_round_keys(key64: int, rounds: int = 3) -> List[int]:
 
 
 def encrypt_3round_block(block64: int, key64: int) -> int:
-    """Encrypt one 64-bit block with 3 DES rounds."""
+    """Mã hoá một khối 64 bit bằng 3 vòng DES."""
     ip_block = permute(block64, IP, 64)
     left, right = split_block(ip_block, 32, 64)
     for round_key in generate_round_keys(key64, rounds=3):
@@ -69,33 +69,33 @@ def encrypt_3round_block(block64: int, key64: int) -> int:
 
 
 def encrypt_3round(block64_hex: str, key64_hex: str) -> str:
-    """Encrypt one hexadecimal block with one hexadecimal DES key."""
+    """Mã hoá một khối hexa bằng một khoá DES hexa."""
     return int_to_hex(encrypt_3round_block(int(block64_hex, 16), int(key64_hex, 16)))
 
 
 def plaintext_to_round0_state(block64: int) -> Tuple[int, int]:
-    """Return the (L0, R0) state after IP."""
+    """Trả về trạng thái (L0, R0) sau IP."""
     return split_block(permute(block64, IP, 64), 32, 64)
 
 
 def round0_state_to_plaintext(left0: int, right0: int) -> int:
-    """Map a post-IP state back to the external plaintext block."""
+    """Ánh xạ một trạng thái sau IP về khối bản rõ bên ngoài."""
     return permute(join_halves(left0, right0, 32), FP, 64)
 
 
 def ciphertext_to_round3_state(block64: int) -> Tuple[int, int]:
-    """Return the (L3, R3) state before the final swap+FP."""
+    """Trả về trạng thái (L3, R3) trước bước hoán đổi cuối và FP."""
     preoutput = permute(block64, IP, 64)
     right3, left3 = split_block(preoutput, 32, 64)
     return left3, right3
 
 
 def normalize_des_key(key64: int) -> int:
-    """Apply DES parity normalization to a 64-bit key candidate."""
+    """Áp dụng chuẩn hoá bit parity của DES cho một ứng viên khoá 64 bit."""
     return apply_odd_parity(mask_bits(key64, 64))
 
 
 def reverse_key_schedule_state(c_or_d: int, rounds: int = 3) -> int:
-    """Undo the cumulative left rotations up to the requested round count."""
+    """Hoàn tác tổng các phép xoay trái đến số vòng được yêu cầu."""
     total_shift = sum(ROUND_SHIFTS[:rounds])
     return right_rotate(c_or_d, total_shift, 28)

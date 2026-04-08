@@ -1,4 +1,4 @@
-"""Verify main-key candidates using fresh oracle plaintexts."""
+"""Kiểm tra các ứng viên khoá chính bằng các bản rõ mới từ Oracle."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from des_core import encrypt_3round_block
 
 
 def generate_verify_plaintexts(count: int, seed: int) -> List[str]:
-    """Generate deterministic verification plaintexts."""
+    """Sinh các bản rõ kiểm tra theo cách tất định."""
     rng = random.Random(seed + 0xD35)
     values = set()
     while len(values) < count:
@@ -24,7 +24,7 @@ def verify_main_keys(
     verify_plaintexts: int,
     seed: int,
 ) -> Dict[str, object]:
-    """Filter main-key candidates by comparing against the oracle."""
+    """Lọc các ứng viên khoá chính bằng cách so sánh với Oracle."""
     test_plaintexts = generate_verify_plaintexts(verify_plaintexts, seed)
     oracle_ciphertexts = oracle.encrypt_many(test_plaintexts)
     survivors = list(main_key_candidates)

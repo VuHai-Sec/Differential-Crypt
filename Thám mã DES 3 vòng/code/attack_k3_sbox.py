@@ -1,4 +1,4 @@
-"""Last-round subkey recovery for one DES S-box."""
+"""Khôi phục khoá con vòng cuối cho một S-box của DES."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from pair_generator import PairRecord
 
 @dataclass
 class SBoxAttackResult:
-    """Candidate scores and logs for one target S-box."""
+    """Điểm số ứng viên và nhật ký cho một S-box mục tiêu."""
 
     sbox_id: int
     score_table: List[int]
@@ -25,7 +25,7 @@ class SBoxAttackResult:
     assumptions: List[str]
 
     def to_dict(self) -> Dict[str, object]:
-        """Convert the attack result to JSON-friendly data."""
+        """Chuyển kết quả tấn công sang dữ liệu phù hợp với JSON."""
         return asdict(self)
 
 
@@ -61,7 +61,7 @@ def attack_k3_for_sbox(
     candidate_policy: Dict[str, object],
     ddt_data: Dict[str, List[List[int]]] | None = None,
 ) -> SBoxAttackResult:
-    """Recover candidate 6-bit subkeys for one target S-box."""
+    """Khôi phục các ứng viên khoá con 6 bit cho một S-box mục tiêu."""
     plaintexts: List[str] = []
     for pair in pairs:
         plaintexts.extend([pair.m1, pair.m2])
@@ -98,7 +98,7 @@ def attack_k3_for_sbox(
             "observed_sbox_output_diff": format(output_diff, "04b"),
             "matched_key_count": len(matched_keys),
             "matched_keys_bin": [format(value, "06b") for value in matched_keys],
-            "assumption": "derive ΔS3 from ΔR3 on 4 bits where ΔL2 is assumed zero via ΔL0=0 and round1 target-input diff=0",
+            "assumption": "suy ra ΔS3 từ ΔR3 trên 4 bit mà tại đó ΔL2 được giả sử bằng 0 thông qua ΔL0=0 và hiệu đầu vào S-box mục tiêu ở vòng 1 bằng 0",
         }
         if ddt_data is not None:
             pair_log["ddt_count"] = ddt_data[str(sbox_id)][input_diff][output_diff]
@@ -107,9 +107,9 @@ def attack_k3_for_sbox(
     max_score = max(score_table)
     top_candidates = _select_top_candidates(score_table, candidate_policy)
     assumptions = [
-        "Only K3 is attacked; output is a candidate set, not a guaranteed unique key.",
-        "Demo simplification: pairs enforce ΔL0 = 0 in addition to the required round-1 target S-box input difference 0.",
-        "Observed round-3 target S-box output difference is reconstructed from the 4 post-P bit positions whose ΔL2 terms vanish under the simplification above.",
+        "Chỉ tấn công K3. Đầu ra là một tập ứng viên, không bảo đảm là khoá duy nhất.",
+        "Giản lược trong bản demo: các cặp buộc ΔL0 = 0 ngoài điều kiện cần là hiệu đầu vào S-box mục tiêu ở vòng 1 bằng 0.",
+        "Hiệu đầu ra quan sát được của S-box mục tiêu ở vòng 3 được khôi phục từ 4 vị trí bit sau phép P, tại đó các hạng ΔL2 triệt tiêu theo giả thiết giản lược nêu trên.",
     ]
     return SBoxAttackResult(
         sbox_id=sbox_id,

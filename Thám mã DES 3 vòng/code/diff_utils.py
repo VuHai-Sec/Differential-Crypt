@@ -1,4 +1,4 @@
-"""Differential helper utilities for the 3-round DES demo."""
+"""Các hàm hỗ trợ vi sai cho bản demo DES 3 vòng."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ P_INV = invert_permutation_table(P)
 
 
 def sbox_input_positions_in_expansion(sbox_id: int) -> List[int]:
-    """Return the R-bit positions that feed the target S-box through E."""
+    """Trả về các vị trí bit của R đi vào Sbox mục tiêu thông qua E."""
     from des_tables import E
 
     start = (sbox_id - 1) * 6
@@ -20,19 +20,19 @@ def sbox_input_positions_in_expansion(sbox_id: int) -> List[int]:
 
 
 def sbox_output_positions_after_p(sbox_id: int) -> List[int]:
-    """Return the 4 bit positions in F output after P for a target S-box."""
+    """Trả về 4 vị trí bit trong đầu ra F sau P của một Sbox mục tiêu."""
     source_positions = list(range((sbox_id - 1) * 4 + 1, (sbox_id - 1) * 4 + 5))
     return [P_INV[source_position - 1] for source_position in source_positions]
 
 
 def project_after_p_diff_to_sbox_output(diff32_after_p: int, sbox_id: int) -> int:
-    """Project a 32-bit post-P difference to one 4-bit S-box output chunk."""
+    """Chiếu một hiệu 32 bit sau P về đoạn đầu ra 4 bit của một Sbox."""
     diff_before_p = permute(diff32_after_p, P_INV, 32)
     return extract_sbox_output_chunk(diff_before_p, sbox_id)
 
 
 def derive_target_sbox_diff_from_ciphertexts(cipher1: int, cipher2: int, sbox_id: int) -> Dict[str, int]:
-    """Derive the observable round-3 S-box output difference for the target."""
+    """Suy ra hiệu đầu ra có thể quan sát của Sbox mục tiêu ở vòng 3 từ hai bản mã."""
     left3_a, right3_a = ciphertext_to_round3_state(cipher1)
     left3_b, right3_b = ciphertext_to_round3_state(cipher2)
     delta_right3 = right3_a ^ right3_b

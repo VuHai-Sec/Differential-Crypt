@@ -1,4 +1,4 @@
-"""Build and cache XOR distribution tables for DES S-boxes."""
+"""Xây dựng và lưu bộ nhớ đệm các bảng phân bố XOR cho các S-box của DES."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from des_core import sbox_lookup
 
 
 def compute_sbox_ddt(sbox_id: int) -> List[List[int]]:
-    """Compute the 64x16 XOR distribution table of one S-box."""
+    """Tính bảng phân bố XOR 64x16 của một S-box."""
     table = [[0 for _ in range(16)] for _ in range(64)]
     for input_a in range(64):
         output_a = sbox_lookup(sbox_id, input_a)
@@ -22,12 +22,12 @@ def compute_sbox_ddt(sbox_id: int) -> List[List[int]]:
 
 
 def build_all_ddts() -> Dict[str, List[List[int]]]:
-    """Compute the DDT for all 8 DES S-boxes."""
+    """Tính DDT cho cả 8 S-box của DES."""
     return {str(sbox_id): compute_sbox_ddt(sbox_id) for sbox_id in range(1, 9)}
 
 
 def load_or_build_ddt(cache_path: str = "artifacts/cache/ddt_cache.json") -> Dict[str, List[List[int]]]:
-    """Load cached DDT data or build it from scratch."""
+    """Tải dữ liệu DDT đã lưu trong bộ nhớ đệm hoặc tự xây dựng từ đầu."""
     cache_file = Path(cache_path)
     if cache_file.exists():
         with cache_file.open("r", encoding="utf-8") as handle:

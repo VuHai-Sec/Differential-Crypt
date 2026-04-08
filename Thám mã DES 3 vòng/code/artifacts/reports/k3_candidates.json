@@ -1,0 +1,66 @@
+[
+  {
+    "k3": 188564633156139,
+    "score": 128,
+    "parts": [
+      {
+        "sbox_id": 1,
+        "key6": 42,
+        "key6_bin": "101010",
+        "key6_hex": "2A",
+        "score": 16
+      },
+      {
+        "sbox_id": 2,
+        "key6": 55,
+        "key6_bin": "110111",
+        "key6_hex": "37",
+        "score": 16
+      },
+      {
+        "sbox_id": 3,
+        "key6": 62,
+        "key6_bin": "111110",
+        "key6_hex": "3E",
+        "score": 16
+      },
+      {
+        "sbox_id": 4,
+        "key6": 31,
+        "key6_bin": "011111",
+        "key6_hex": "1F",
+        "score": 16
+      },
+      {
+        "sbox_id": 5,
+        "key6": 62,
+        "key6_bin": "111110",
+        "key6_hex": "3E",
+        "score": 16
+      },
+      {
+        "sbox_id": 6,
+        "key6": 31,
+        "key6_bin": "011111",
+        "key6_hex": "1F",
+        "score": 16
+      },
+      {
+        "sbox_id": 7,
+        "key6": 40,
+        "key6_bin": "101000",
+        "key6_hex": "28",
+        "score": 16
+      },
+      {
+        "sbox_id": 8,
+        "key6": 43,
+        "key6_bin": "101011",
+        "key6_hex": "2B",
+        "score": 16
+      }
+    ],
+    "k3_hex": "AB7F9FF9FA2B",
+    "k3_bin": "101010110111111110011111111110011111101000101011"
+  }
+]

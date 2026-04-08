@@ -1,4 +1,4 @@
-"""Generate chosen plaintext pairs that satisfy the round-1 DES constraint."""
+"""Sinh các cặp bản rõ được chọn thỏa mãn ràng buộc của DES ở vòng 1."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from diff_utils import sbox_input_positions_in_expansion
 
 @dataclass
 class PairRecord:
-    """Chosen plaintext pair with attached metadata."""
+    """Cặp bản rõ được chọn kèm theo siêu dữ liệu."""
 
     m1: str
     m2: str
@@ -28,12 +28,12 @@ class PairRecord:
     notes: List[str]
 
     def to_dict(self) -> Dict[str, object]:
-        """Convert the record into JSON-friendly data."""
+        """Chuyển bản ghi sang dữ liệu phù hợp với JSON."""
         return asdict(self)
 
 
 def validate_pair_constraint(m1: int | str, m2: int | str, sbox_id: int, require_equal_l0: bool = True) -> Dict[str, object]:
-    """Validate the pair constraint on the target S-box after IP."""
+    """Kiểm tra ràng buộc của cặp trên Sbox mục tiêu sau IP."""
     block1 = int(m1, 16) if isinstance(m1, str) else m1
     block2 = int(m2, 16) if isinstance(m2, str) else m2
     left0_a, right0_a = plaintext_to_round0_state(block1)
@@ -102,7 +102,7 @@ def generate_pair_for_sbox(
     pair_index: int = 0,
     require_equal_l0: bool = True,
 ) -> PairRecord:
-    """Generate one chosen plaintext pair for a target S-box."""
+    """Sinh một cặp bản rõ được chọn cho một Sbox mục tiêu."""
     rng = random.Random((seed or 0) + sbox_id * 1009 + pair_index * 7919)
     left0 = rng.getrandbits(32)
     right0_a = rng.getrandbits(32)
@@ -112,14 +112,14 @@ def generate_pair_for_sbox(
     elif mode == "random":
         delta_r0 = _random_allowed_mask(sbox_id, rng)
     else:
-        raise ValueError(f"Unsupported pair generation mode: {mode}")
+        raise ValueError(f"Không hỗ trợ chế độ sinh cặp: {mode}")
     right0_b = right0_a ^ delta_r0
     left0_b = left0 if require_equal_l0 else rng.getrandbits(32)
     plaintext1 = round0_state_to_plaintext(left0, right0_a)
     plaintext2 = round0_state_to_plaintext(left0_b, right0_b)
     validation = validate_pair_constraint(plaintext1, plaintext2, sbox_id, require_equal_l0=require_equal_l0)
     if not validation["constraint_ok"]:
-        raise RuntimeError(f"Generated pair does not satisfy constraint for S-box {sbox_id}")
+        raise RuntimeError(f"Cặp được sinh ra không thỏa mãn ràng buộc cho Sbox {sbox_id}")
     notes = list(validation["notes"])
     notes.append("delta_r0_only_touches_non_target_expansion_bits")
     if mode == "predefined":
@@ -145,7 +145,7 @@ def generate_many_pairs(
     seed: Optional[int] = None,
     require_equal_l0: bool = True,
 ) -> List[PairRecord]:
-    """Generate many chosen plaintext pairs for one target S-box."""
+    """Sinh nhiều cặp bản rõ được chọn cho một Sbox mục tiêu."""
     return [
         generate_pair_for_sbox(
             sbox_id=sbox_id,
