@@ -28,21 +28,23 @@ def main() -> None:
     config = load_config()
     debug = bool(config.get("debug", False))
     oracle = DES3RoundOracle(seed=int(config.get("random_seed", 0)))
+    # tạo bảng ddt
     ddt_data = load_or_build_ddt()
+    # tấn công các Sbox
     attack_bundle = attack_all_sboxes(oracle=oracle, config=config, ddt_data=ddt_data)
 
     debug_print(debug, "Các cặp bản rõ đã sinh", attack_bundle["pairs_by_sbox"])
     debug_print(debug, "Kết quả tấn công theo từng S-box", attack_bundle["results_by_sbox"])
-
+    # khôi phục khoá vòng
     k3_candidates = assemble_k3_candidates(
         results_by_sbox=attack_bundle["results_by_sbox"],
         prune_limit=int(config.get("roundkey_prune_limit", 4096)),
     )
     debug_print(debug, "Các ứng viên K3 sau khi ghép", k3_candidates)
-
+    # tìm tập khoá chính tương ứng
     main_key_candidates = recover_main_keys_from_k3_candidates(k3_candidates)
     debug_print(debug, "Các ứng viên khoá chính đã khôi phục", main_key_candidates[: min(20, len(main_key_candidates))])
-
+    # kiểm tra key được tạo ra
     verify_result = verify_main_keys(
         main_key_candidates=main_key_candidates,
         oracle=oracle,
@@ -50,14 +52,6 @@ def main() -> None:
         seed=int(config.get("random_seed", 0)),
     )
     debug_print(debug, "Nhật ký kiểm tra", verify_result)
-
-    assumptions = [
-        "Tấn công chỉ nhắm vào K3 và tạo ra các tập ứng viên.",
-        "Quá trình sinh cặp áp đặt XOR bằng 0 cần thiết trên đầu vào S-box mục tiêu ở vòng 1 thông qua E(R0).",
-        "Giản lược trong bản demo: các cặp cũng áp đặt L0 giống nhau để đại lượng quan sát ở vòng 3 có thể được rút gọn sạch về mức S-box.",
-        "Việc ghép K3 dùng beam pruning để giữ cho tích Descartes ở mức có thể xử lý được.",
-        "Lịch khoá nghịch mở rộng mỗi ứng viên K3 thành nhiều ứng viên khoá chính vì PC-2 không phải là song ánh.",
-    ]
 
     runtime_seconds = time.perf_counter() - start_time
     summary = build_summary(
@@ -70,7 +64,7 @@ def main() -> None:
     )
     full_report = {
         "summary": summary,
-        "assumptions": assumptions,
+        "assumptions": None,
         "attack_bundle": attack_bundle,
         "k3_candidates": k3_candidates,
         "main_key_candidates": main_key_candidates,

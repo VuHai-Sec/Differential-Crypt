@@ -12,7 +12,7 @@ P_INV = invert_permutation_table(P)
 
 
 def sbox_input_positions_in_expansion(sbox_id: int) -> List[int]:
-    """Trả về các vị trí bit của R đi vào Sbox mục tiêu thông qua E."""
+    """Trả về các vị trí bit của R đi vào Sbox mục tiêu sau khi qua E."""
     from des_tables import E
 
     start = (sbox_id - 1) * 6
@@ -32,10 +32,13 @@ def project_after_p_diff_to_sbox_output(diff32_after_p: int, sbox_id: int) -> in
 
 
 def derive_target_sbox_diff_from_ciphertexts(cipher1: int, cipher2: int, sbox_id: int) -> Dict[str, int]:
-    """Suy ra hiệu đầu ra có thể quan sát của Sbox mục tiêu ở vòng 3 từ hai bản mã."""
+    """Suy ra vi sai đầu ra của Sbox mục tiêu ở vòng 3 từ hai bản mã."""
+    # dịch ngược bản mã về trước hoán đổi cuối và FP
     left3_a, right3_a = ciphertext_to_round3_state(cipher1)
     left3_b, right3_b = ciphertext_to_round3_state(cipher2)
+    # XOR
     delta_right3 = right3_a ^ right3_b
+    # các vị trí bit đầu ra tương ứng Sbox đang xét
     known_positions = sbox_output_positions_after_p(sbox_id)
     partial_diff = 0
     known_bits = {}
@@ -43,6 +46,7 @@ def derive_target_sbox_diff_from_ciphertexts(cipher1: int, cipher2: int, sbox_id
         bit = (delta_right3 >> (32 - position)) & 1
         partial_diff |= bit << (32 - position)
         known_bits[str(position)] = bit
+    # đảo ngược 32 bit -> 4 bit sau Sbox
     observed_sbox_diff = project_after_p_diff_to_sbox_output(partial_diff, sbox_id)
     return {
         "left3_a": left3_a,
@@ -51,7 +55,7 @@ def derive_target_sbox_diff_from_ciphertexts(cipher1: int, cipher2: int, sbox_id
         "right3_b": right3_b,
         "delta_right3": delta_right3,
         "partial_diff": partial_diff,
-        "observed_sbox_diff": observed_sbox_diff,
+        "observed_sbox_diff": observed_sbox_diff, # vi sai đầu ra
         "known_positions": known_positions,
         "known_bits": known_bits,
     }

@@ -10,11 +10,14 @@ from key_schedule_inverse import invert_round3_subkey
 
 def recover_main_keys_from_k3_candidates(k3_candidates: List[Dict[str, object]]) -> List[Dict[str, object]]:
     """Đảo ngược các khoá con vòng 3 thành các ứng viên khoá chính đã loại trùng."""
+    # tạo bảng gom kết quả
     recovered: Dict[int, Dict[str, object]] = {}
+    # duyệt từng ứng viên K3
     for candidate in k3_candidates:
         round_key = int(candidate["k3"])
         source_hex = str(candidate["k3_hex"])
         source_score = int(candidate["score"])
+        # tạo các khoá chính khác nhau từ K3
         for main_key in invert_round3_subkey(round_key):
             record = recovered.setdefault(
                 main_key,

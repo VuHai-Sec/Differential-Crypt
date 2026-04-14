@@ -1,4 +1,4 @@
-"""Standard DES tables used by the reduced 1-round demo."""
+"""Các bảng DES chuẩn dùng cho bộ demo rút gọn 1 vòng."""
 
 IP = (
     58, 50, 42, 34, 26, 18, 10, 2,

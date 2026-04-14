@@ -60,11 +60,13 @@ def validate_pair_constraint(m1: int | str, m2: int | str, sbox_id: int, require
 
 
 def _allowed_r0_positions_for_sbox(sbox_id: int) -> List[int]:
+    '''xác định các bit KHÔNG đi vào Sbox mục tiêu'''
     blocked = set(sbox_input_positions_in_expansion(sbox_id))
     return [position for position in range(1, 33) if position not in blocked]
 
 
 def _predefined_masks_for_sbox(sbox_id: int) -> List[int]:
+    '''Sửa random những vị trí bit KHÔNG đi vào Sbox mục tiêu (để đa dạng dữ liệu)'''
     allowed = _allowed_r0_positions_for_sbox(sbox_id)
     patterns = [
         allowed[:6],
@@ -107,6 +109,7 @@ def generate_pair_for_sbox(
     left0 = rng.getrandbits(32)
     right0_a = rng.getrandbits(32)
     if mode == "predefined":
+        # xác định nhưungx bit được sửa
         masks = _predefined_masks_for_sbox(sbox_id)
         delta_r0 = masks[pair_index % len(masks)]
     elif mode == "random":
@@ -115,8 +118,10 @@ def generate_pair_for_sbox(
         raise ValueError(f"Không hỗ trợ chế độ sinh cặp: {mode}")
     right0_b = right0_a ^ delta_r0
     left0_b = left0 if require_equal_l0 else rng.getrandbits(32)
+    # tạo cặp bản rõ
     plaintext1 = round0_state_to_plaintext(left0, right0_a)
     plaintext2 = round0_state_to_plaintext(left0_b, right0_b)
+    # kiểm tra xem cặp đã gen có phù hợp không?
     validation = validate_pair_constraint(plaintext1, plaintext2, sbox_id, require_equal_l0=require_equal_l0)
     if not validation["constraint_ok"]:
         raise RuntimeError(f"Cặp được sinh ra không thỏa mãn ràng buộc cho Sbox {sbox_id}")
@@ -146,6 +151,7 @@ def generate_many_pairs(
     require_equal_l0: bool = True,
 ) -> List[PairRecord]:
     """Sinh nhiều cặp bản rõ được chọn cho một Sbox mục tiêu."""
+    # output: Các cặp bản rõ
     return [
         generate_pair_for_sbox(
             sbox_id=sbox_id,

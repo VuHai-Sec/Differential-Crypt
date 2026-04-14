@@ -10,7 +10,7 @@ from des_core import encrypt_3round_block
 
 
 def generate_verify_plaintexts(count: int, seed: int) -> List[str]:
-    """Sinh các bản rõ kiểm tra theo cách tất định."""
+    """Sinh các bản rõ kiểm tra randomly."""
     rng = random.Random(seed + 0xD35)
     values = set()
     while len(values) < count:

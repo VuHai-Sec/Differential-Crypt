@@ -1,4 +1,4 @@
-"""Shared DES helpers for the 1-round demo programs."""
+"""Các hàm hỗ trợ DES dùng chung cho bộ demo 1 vòng."""
 
 from __future__ import annotations
 
@@ -10,17 +10,17 @@ DEBUG = True
 
 
 def validate_hex(value: str, bit_length: int, name: str) -> str:
-    """Return an upper-case hex string after validating length and digits."""
+    """Trả về chuỗi hex viết hoa sau khi kiểm tra độ dài và ký tự hợp lệ."""
     if not isinstance(value, str):
-        raise ValueError(f"{name} must be a hex string.")
+        raise ValueError(f"{name} phải là một chuỗi hex.")
     normalized = value.strip().upper()
     expected_length = bit_length // 4
     if len(normalized) != expected_length:
-        raise ValueError(f"{name} must be exactly {expected_length} hex characters.")
+        raise ValueError(f"{name} phải có đúng {expected_length} ký tự hex.")
     try:
         int(normalized, 16)
     except ValueError as exc:
-        raise ValueError(f"{name} must contain only hexadecimal characters.") from exc
+        raise ValueError(f"{name} chỉ được chứa các ký tự hệ 16.") from exc
     return normalized
 
 
@@ -31,7 +31,7 @@ def hex_to_bits(value: str, bit_length: int) -> str:
 
 def bits_to_hex(bits: str) -> str:
     if len(bits) % 4 != 0:
-        raise ValueError("Bit length must be a multiple of 4.")
+        raise ValueError("Độ dài bit phải là bội số của 4.")
     return format(int(bits, 2), f"0{len(bits) // 4}X")
 
 
@@ -55,7 +55,7 @@ P_INV = inverse_permutation(P, 32)
 
 def xor_bits(left: str, right: str) -> str:
     if len(left) != len(right):
-        raise ValueError("Bit strings must have the same length for XOR.")
+        raise ValueError("Hai chuỗi bit phải có cùng độ dài để XOR.")
     return "".join("1" if bit_l != bit_r else "0" for bit_l, bit_r in zip(left, right))
 
 
@@ -94,7 +94,7 @@ def f_function(right32: str, round_key48: str) -> str:
 
 
 def derive_round_key_round1(main_key_hex: str) -> str:
-    key_bits = hex_to_bits(validate_hex(main_key_hex, 64, "Main key"), 64)
+    key_bits = hex_to_bits(validate_hex(main_key_hex, 64, "Khóa chính"), 64)
     key56 = permute(key_bits, PC1)
     c0, d0 = key56[:28], key56[28:]
     shift = SHIFT_SCHEDULE[0]
@@ -108,7 +108,7 @@ def encrypt_one_round_from_ip_state(ip_state64: str, round_key48: str) -> dict[s
     f_output = f_function(r0, round_key48)
     l1 = r0
     r1 = xor_bits(l0, f_output)
-    # swap l1 and r1
+    # Hoán đổi l1 và r1.
     preoutput = r1 + l1
     return {
         "L0": l0,
@@ -122,7 +122,7 @@ def encrypt_one_round_from_ip_state(ip_state64: str, round_key48: str) -> dict[s
 
 
 def encrypt_one_round_block(plaintext_hex: str, main_key_hex: str) -> dict[str, str]:
-    plaintext_bits = hex_to_bits(validate_hex(plaintext_hex, 64, "Plaintext"), 64)
+    plaintext_bits = hex_to_bits(validate_hex(plaintext_hex, 64, "Bản rõ"), 64)
     ip_state = permute(plaintext_bits, IP)
     round_key = derive_round_key_round1(main_key_hex)
     result = encrypt_one_round_from_ip_state(ip_state, round_key)
@@ -132,13 +132,13 @@ def encrypt_one_round_block(plaintext_hex: str, main_key_hex: str) -> dict[str, 
 
 
 def preoutput_from_ciphertext(ciphertext_hex: str) -> str:
-    ciphertext_bits = hex_to_bits(validate_hex(ciphertext_hex, 64, "Ciphertext"), 64)
+    ciphertext_bits = hex_to_bits(validate_hex(ciphertext_hex, 64, "Bản mã"), 64)
     return permute(ciphertext_bits, IP)
 
 
 def plaintext_from_ip_state(ip_state64: str) -> str:
     if len(ip_state64) != 64:
-        raise ValueError("IP state must be 64 bits.")
+        raise ValueError("Trạng thái IP phải có 64 bit.")
     return bits_to_hex(permute(ip_state64, FP))
 
 
@@ -160,7 +160,7 @@ def fill_unknown_bits(template: Sequence[str], fill_bits: Iterable[str]) -> str:
 
 def key56_to_key64_with_odd_parity(key56_bits: str) -> str:
     if len(key56_bits) != 56:
-        raise ValueError("56-bit DES key material is required.")
+        raise ValueError("Cần dữ liệu khóa DES 56 bit.")
     key64 = ["0"] * 64
     for output_index, input_index in enumerate(PC1):
         key64[input_index - 1] = key56_bits[output_index]

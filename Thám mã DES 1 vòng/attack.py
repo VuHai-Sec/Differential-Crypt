@@ -1,13 +1,13 @@
-"""Chosen-plaintext differential attack on the 1-round DES oracle."""
+"""Tấn công vi sai chosen-plaintext lên Oracle DES 1 vòng."""
 
 from __future__ import annotations
 
 import itertools
 import random
-import subprocess
 import sys
-from pathlib import Path
+from dataclasses import dataclass
 
+from des_1_round_oracle import encrypt_many_blocks
 from des_tables import E, S_BOXES
 from des_utils import (
     DEBUG,
@@ -23,13 +23,28 @@ from des_utils import (
     xor_bits,
 )
 
-CURRENT_DIR = Path(__file__).resolve().parent
-ORACLE_PATH = CURRENT_DIR / "des_1_round_oracle.py"
 TOP_DIFFERENCES_PER_SBOX = 3
 BATCHES_PER_DIFFERENCE = 2
 PAIRS_PER_BATCH = 6
 EXTRA_BATCHES_IF_TIED = 1
 RNG = random.Random(0xD35C0DE)
+SUBKEY_CANDIDATE_BITS = [int_to_bits(candidate, 6) for candidate in range(64)]
+
+
+@dataclass(frozen=True)
+class PairRequest:
+    plaintext_a: str
+    plaintext_b: str
+    expanded_a: str
+    expanded_b: str
+
+
+@dataclass(frozen=True)
+class PairObservation:
+    expanded_a: str
+    expanded_b: str
+    observed_output_difference: str
+    reference_pair: tuple[str, str]
 
 
 def build_ddt(sbox: tuple[tuple[int, ...], ...]) -> list[list[int]]:
@@ -65,13 +80,13 @@ def choose_input_differences(
     ranked_differences.sort(key=lambda item: (item[0], -item[1]), reverse=True)
     chosen = [delta_bits for _, _, delta_bits in ranked_differences[:top_count]]
     if not chosen:
-        raise RuntimeError(f"Could not choose any valid differential for S-box {box_index + 1}.")
+        raise RuntimeError(f"Không thể chọn được vi sai hợp lệ nào cho S-box {box_index + 1}.")
     return chosen
 
 
 def r_difference_for_sbox(box_index: int, input_difference6: str) -> str:
     if input_difference6[0] != "0" or input_difference6[5] != "0":
-        raise ValueError("Chosen input difference must keep the shared boundary bits at zero.")
+        raise ValueError("Input difference đã chọn phải giữ các bit biên dùng chung bằng 0.")
     delta_r = ["0"] * 32
     segment = E[box_index * 6:(box_index + 1) * 6]
     for bit_value, r_position in zip(input_difference6[1:5], segment[1:5]):
@@ -79,34 +94,42 @@ def r_difference_for_sbox(box_index: int, input_difference6: str) -> str:
     return "".join(delta_r)
 
 
-def call_oracle(plaintext_hex: str) -> str:
-    validate_hex(plaintext_hex, 64, "Plaintext")
-    completed = subprocess.run(
-        [sys.executable, str(ORACLE_PATH), plaintext_hex],
-        cwd=str(CURRENT_DIR),
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if completed.returncode != 0:
-        raise RuntimeError(completed.stderr.strip() or "Oracle execution failed.")
-
-    for line in completed.stdout.splitlines():
-        if line.startswith("CIPHERTEXT: "):
-            return validate_hex(line.split(": ", 1)[1], 64, "Ciphertext")
-    raise RuntimeError("Oracle output is missing the ciphertext line.")
-
-
-def sample_pair_observation(box_index: int, delta_r: str) -> dict[str, str | tuple[str, str]]:
+def generate_pair_request(box_index: int, delta_r: str) -> PairRequest:
     l0 = int_to_bits(RNG.getrandbits(32), 32)
     r0 = int_to_bits(RNG.getrandbits(32), 32)
     paired_r0 = xor_bits(r0, delta_r)
 
     plaintext_a = plaintext_from_ip_state(l0 + r0)
     plaintext_b = plaintext_from_ip_state(l0 + paired_r0)
-    ciphertext_a = call_oracle(plaintext_a)
-    ciphertext_b = call_oracle(plaintext_b)
+    expanded_a = chunk_bits(permute(r0, E), 6)[box_index]
+    expanded_b = chunk_bits(permute(paired_r0, E), 6)[box_index]
 
+    return PairRequest(
+        plaintext_a=plaintext_a,
+        plaintext_b=plaintext_b,
+        expanded_a=expanded_a,
+        expanded_b=expanded_b,
+    )
+
+
+def generate_pair_requests_for_difference(
+    box_index: int,
+    delta_r: str,
+    batch_count: int,
+) -> list[PairRequest]:
+    pair_requests = []
+    for _ in range(batch_count):
+        for _ in range(PAIRS_PER_BATCH):
+            pair_requests.append(generate_pair_request(box_index, delta_r))
+    return pair_requests
+
+
+def process_encrypted_pair(
+    box_index: int,
+    pair_request: PairRequest,
+    ciphertext_a: str,
+    ciphertext_b: str,
+) -> PairObservation:
     preoutput_a = preoutput_from_ciphertext(ciphertext_a)
     preoutput_b = preoutput_from_ciphertext(ciphertext_b)
     r1_a = preoutput_a[:32]
@@ -116,15 +139,50 @@ def sample_pair_observation(box_index: int, delta_r: str) -> dict[str, str | tup
     delta_sbox_outputs = permute(delta_f, P_INV)
     observed_output_difference = chunk_bits(delta_sbox_outputs, 4)[box_index]
 
-    expanded_a = chunk_bits(permute(r0, E), 6)[box_index]
-    expanded_b = chunk_bits(permute(paired_r0, E), 6)[box_index]
+    return PairObservation(
+        expanded_a=pair_request.expanded_a,
+        expanded_b=pair_request.expanded_b,
+        observed_output_difference=observed_output_difference,
+        reference_pair=(pair_request.plaintext_a, ciphertext_a),
+    )
 
-    return {
-        "expanded_a": expanded_a,
-        "expanded_b": expanded_b,
-        "observed_output_difference": observed_output_difference,
-        "reference_pair": (plaintext_a, ciphertext_a),
-    }
+
+def encrypt_pair_requests(box_index: int, pair_requests: list[PairRequest]) -> list[PairObservation]:
+    plaintext_hex_list = []
+    for pair_request in pair_requests:
+        plaintext_hex_list.append(pair_request.plaintext_a)
+        plaintext_hex_list.append(pair_request.plaintext_b)
+
+    ciphertext_hex_list = encrypt_many_blocks(plaintext_hex_list)
+    if len(ciphertext_hex_list) != len(plaintext_hex_list):
+        raise RuntimeError("Kích thước output batch của Oracle không khớp với kích thước batch bản rõ.")
+
+    observations = []
+    for pair_index, pair_request in enumerate(pair_requests):
+        ciphertext_a = validate_hex(ciphertext_hex_list[2 * pair_index], 64, "Bản mã")
+        ciphertext_b = validate_hex(ciphertext_hex_list[2 * pair_index + 1], 64, "Bản mã")
+        observations.append(process_encrypted_pair(box_index, pair_request, ciphertext_a, ciphertext_b))
+    return observations
+
+
+def score_observations(
+    box_index: int,
+    scores: list[int],
+    observations: list[PairObservation],
+) -> tuple[str, str] | None:
+    reference_pair = None
+
+    for observation in observations:
+        if reference_pair is None:
+            reference_pair = observation.reference_pair
+
+        for subkey_candidate, candidate_bits in enumerate(SUBKEY_CANDIDATE_BITS):
+            output_a = sbox_lookup(box_index, xor_bits(observation.expanded_a, candidate_bits))
+            output_b = sbox_lookup(box_index, xor_bits(observation.expanded_b, candidate_bits))
+            if xor_bits(output_a, output_b) == observation.observed_output_difference:
+                scores[subkey_candidate] += 1
+
+    return reference_pair
 
 
 def accumulate_scores_for_difference(
@@ -133,26 +191,9 @@ def accumulate_scores_for_difference(
     scores: list[int],
 ) -> tuple[str, str] | None:
     delta_r = r_difference_for_sbox(box_index, input_difference6)
-    reference_pair = None
-
-    for _ in range(BATCHES_PER_DIFFERENCE):
-        for _ in range(PAIRS_PER_BATCH):
-            observation = sample_pair_observation(box_index, delta_r)
-            if reference_pair is None:
-                reference_pair = observation["reference_pair"]  # type: ignore[assignment]
-
-            expanded_a = observation["expanded_a"]  # type: ignore[assignment]
-            expanded_b = observation["expanded_b"]  # type: ignore[assignment]
-            observed_output_difference = observation["observed_output_difference"]  # type: ignore[assignment]
-
-            for subkey_candidate in range(64):
-                candidate_bits = int_to_bits(subkey_candidate, 6)
-                output_a = sbox_lookup(box_index, xor_bits(expanded_a, candidate_bits))
-                output_b = sbox_lookup(box_index, xor_bits(expanded_b, candidate_bits))
-                if xor_bits(output_a, output_b) == observed_output_difference:
-                    scores[subkey_candidate] += 1
-
-    return reference_pair
+    pair_requests = generate_pair_requests_for_difference(box_index, delta_r, BATCHES_PER_DIFFERENCE)
+    observations = encrypt_pair_requests(box_index, pair_requests)
+    return score_observations(box_index, scores, observations)
 
 
 def best_candidates_for_sbox(scores: list[int]) -> tuple[int, list[str]]:
@@ -177,26 +218,16 @@ def score_subkeys_for_sbox(
     if len(candidates) > 1:
         for input_difference6 in input_differences:
             delta_r = r_difference_for_sbox(box_index, input_difference6)
-            for _ in range(EXTRA_BATCHES_IF_TIED):
-                for _ in range(PAIRS_PER_BATCH):
-                    observation = sample_pair_observation(box_index, delta_r)
-                    expanded_a = observation["expanded_a"]  # type: ignore[assignment]
-                    expanded_b = observation["expanded_b"]  # type: ignore[assignment]
-                    observed_output_difference = observation["observed_output_difference"]  # type: ignore[assignment]
-
-                    for subkey_candidate in range(64):
-                        candidate_bits = int_to_bits(subkey_candidate, 6)
-                        output_a = sbox_lookup(box_index, xor_bits(expanded_a, candidate_bits))
-                        output_b = sbox_lookup(box_index, xor_bits(expanded_b, candidate_bits))
-                        if xor_bits(output_a, output_b) == observed_output_difference:
-                            scores[subkey_candidate] += 1
+            pair_requests = generate_pair_requests_for_difference(box_index, delta_r, EXTRA_BATCHES_IF_TIED)
+            observations = encrypt_pair_requests(box_index, pair_requests)
+            score_observations(box_index, scores, observations)
 
         max_score, candidates = best_candidates_for_sbox(scores)
 
     if DEBUG:
         print(
-            f"S{box_index + 1} MAX_SCORE={max_score} "
-            f"CANDIDATES={','.join(candidates)} COUNT={len(candidates)}",
+            f"S{box_index + 1} DIEM_CAO_NHAT={max_score} "
+            f"UNG_VIEN={','.join(candidates)} SO_LUONG={len(candidates)}",
             file=sys.stderr,
         )
 
@@ -233,12 +264,12 @@ def recover_round_key_candidates() -> tuple[str, str, list[str]]:
 
         if DEBUG:
             print(
-                f"S{box_index + 1} DIFFS={','.join(input_differences)}",
+                f"S{box_index + 1} VI_SAI={','.join(input_differences)}",
                 file=sys.stderr,
             )
 
     if reference_plaintext is None or reference_ciphertext is None:
-        raise RuntimeError("No reference plaintext/ciphertext pair was collected.")
+        raise RuntimeError("Không thu được cặp bản rõ/bản mã tham chiếu nào.")
 
     round_key_candidates = enumerate_round_key_candidates(sbox_candidate_lists)
     return reference_plaintext, reference_ciphertext, round_key_candidates
@@ -246,19 +277,19 @@ def recover_round_key_candidates() -> tuple[str, str, list[str]]:
 
 def main() -> int:
     if len(sys.argv) != 1:
-        print("Usage: python attack.py", file=sys.stderr)
+        print("Cách dùng: python attack.py", file=sys.stderr)
         return 1
 
     try:
         reference_plaintext, reference_ciphertext, round_key_candidates = recover_round_key_candidates()
     except (RuntimeError, ValueError) as exc:
-        print(f"ERROR: {exc}", file=sys.stderr)
+        print(f"LỖI: {exc}", file=sys.stderr)
         return 1
 
-    print(f"REFERENCE_PLAINTEXT: {reference_plaintext}")
-    print(f"REFERENCE_CIPHERTEXT: {reference_ciphertext}")
-    print(f"ROUND_KEY_CANDIDATE_COUNT: {len(round_key_candidates)}")
-    print("ROUND_KEY_CANDIDATES:")
+    print(f"BAN_RO_THAM_CHIEU: {reference_plaintext}")
+    print(f"BAN_MA_THAM_CHIEU: {reference_ciphertext}")
+    print(f"SO_LUONG_UNG_VIEN_KHOA_VONG: {len(round_key_candidates)}")
+    print("CAC_UNG_VIEN_KHOA_VONG:")
     for round_key_candidate in round_key_candidates:
         print(round_key_candidate)
     return 0

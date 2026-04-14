@@ -30,6 +30,7 @@ class SBoxAttackResult:
 
 
 def _select_top_candidates(score_table: Sequence[int], candidate_policy: Dict[str, object]) -> List[Dict[str, object]]:
+    ''' lấy ra key có số phiếu nhiều nhất'''
     max_score = max(score_table)
     min_ratio = float(candidate_policy.get("min_score_ratio", 1.0))
     threshold = math.ceil(max_score * min_ratio)
@@ -54,6 +55,7 @@ def _select_top_candidates(score_table: Sequence[int], candidate_policy: Dict[st
     ]
 
 
+
 def attack_k3_for_sbox(
     sbox_id: int,
     pairs: Sequence[PairRecord],
@@ -65,25 +67,35 @@ def attack_k3_for_sbox(
     plaintexts: List[str] = []
     for pair in pairs:
         plaintexts.extend([pair.m1, pair.m2])
+    # call oracle.py/encrypt_many (mã hoá nhiều plaintext 1 lúc)
     ciphertexts = oracle.encrypt_many(plaintexts)
     score_table = [0 for _ in range(64)]
+    # tạo mảng đánh dấu
     pair_logs: List[Dict[str, object]] = []
 
     for pair_index, pair in enumerate(pairs):
         c1 = int(ciphertexts[2 * pair_index], 16)
         c2 = int(ciphertexts[2 * pair_index + 1], 16)
+        # lấy ra các thông tin L3a / L3b và vi sau đầu ra
         observed = derive_target_sbox_diff_from_ciphertexts(c1, c2, sbox_id)
         expanded_r2_a = permute(observed["left3_a"], E, 32)
         expanded_r2_b = permute(observed["left3_b"], E, 32)
+        # tính đầu vào 
         input_a = extract_sbox_chunk(expanded_r2_a, sbox_id)
         input_b = extract_sbox_chunk(expanded_r2_b, sbox_id)
+        # tính vi sai đầu vào
         input_diff = input_a ^ input_b
+        # tính vi sai đầu ra
         output_diff = int(observed["observed_sbox_diff"])
         matched_keys: List[int] = []
+        
+        # vét cạn 64 case khoá 6 bit
+        # tìm kiếm cặp đầu vào (sau XOR key) - đầu ra trong Sbox
         for key_candidate in range(64):
             sbox_out_a = sbox_lookup(sbox_id, input_a ^ key_candidate)
             sbox_out_b = sbox_lookup(sbox_id, input_b ^ key_candidate)
             if (sbox_out_a ^ sbox_out_b) == output_diff:
+                # khoá thoả mãn -> Thêm vào
                 score_table[key_candidate] += 1
                 matched_keys.append(key_candidate)
         pair_log = {
@@ -100,11 +112,13 @@ def attack_k3_for_sbox(
             "matched_keys_bin": [format(value, "06b") for value in matched_keys],
             "assumption": "suy ra ΔS3 từ ΔR3 trên 4 bit mà tại đó ΔL2 được giả sử bằng 0 thông qua ΔL0=0 và hiệu đầu vào S-box mục tiêu ở vòng 1 bằng 0",
         }
+        # ddt là optional
         if ddt_data is not None:
             pair_log["ddt_count"] = ddt_data[str(sbox_id)][input_diff][output_diff]
         pair_logs.append(pair_log)
 
     max_score = max(score_table)
+    # chọn ra các key số phiếu cao nhất
     top_candidates = _select_top_candidates(score_table, candidate_policy)
     assumptions = [
         "Chỉ tấn công K3. Đầu ra là một tập ứng viên, không bảo đảm là khoá duy nhất.",

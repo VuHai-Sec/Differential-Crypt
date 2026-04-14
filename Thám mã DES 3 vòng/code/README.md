@@ -9,12 +9,6 @@ Project này dựng một pipeline hoàn chỉnh để demo **thám mã vi sai D
 5. đảo DES key schedule vòng 3 để sinh **main-key candidates**,
 6. dùng oracle để **verify** và lọc các main-key candidates.
 
-Lưu ý:
-
-- Đây là **demo reduced-round DES 3 vòng**, không phải DES 16 vòng đầy đủ.
-- Pha attack chỉ nhằm khôi phục **candidate set** cho `K3`, không giả định đầu ra là duy nhất.
-- Oracle chỉ dùng để **mã hóa chosen plaintext** và **verify cuối**.
-
 ## Cấu trúc file
 
 - `des_tables.py`: toàn bộ bảng DES chuẩn như `IP`, `FP`, `E`, `P`, `PC-1`, `PC-2`, `S-box`.
@@ -82,9 +76,5 @@ Khi `debug = true`, chương trình in/log thêm:
 
 Khi `debug = false`, output console gọn hơn, nhưng artifacts JSON vẫn được lưu.
 
-## Assumption, approximation, simplification
 
-- **Assumption chính để demo ổn định**: ngoài điều kiện bắt buộc `E(R0)_target xor E(R0')_target = 0`, pair generator còn ép `L0` của hai plaintext bằng nhau.
-- **Lý do**: khi đó ở round 1, target S-box có input difference bằng 0 nên output difference của S-box đó bằng 0; kết hợp với `ΔL0 = 0` cho phép suy ra 4 bit tương ứng của `ΔL2` bằng 0, từ đó quy attack round 3 về mức S-box giống bài toán 1 vòng.
-- **Approximation / demo simplification**: bước ghép `K3` dùng `beam pruning` để tránh bùng nổ tổ hợp. Điều này giúp demo chạy nhanh hơn nhưng không phải chiến lược exhaustive hoàn toàn.
-- **Không giả định duy nhất**: từ một `K3` candidate có thể suy ra nhiều `main-key candidates` vì `PC-2` không khả nghịch một-một.
+
