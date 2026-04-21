@@ -18,6 +18,13 @@ def generate_ddt():
     for x1 in range(64):
         for x2 in range(64):
             ddt[x1 ^ x2][sbox_lookup(x1) ^ sbox_lookup(x2)] += 1
+    # [BS] in ra bảng ddt
+    print("\n[+] BẢNG DDT CỦA S4:")
+    print("-" * 92)
+    print("{:<8}".format("dx\\dy") + " ".join(f"{dy:>4X}" for dy in range(16)))
+    print("-" * 92)
+    for dx in range(64):
+        print(f"{dx:>4X}    " + " ".join(f"{ddt[dx][dy]:>4}" for dy in range(16)))
     return ddt
 
 # --- HÀM THÁM MÃ TỰ ĐỘNG ---
@@ -62,11 +69,15 @@ def automated_attack():
             # Tạo bản rõ ngẫu nhiên p1, p2 sao cho p1 ^ p2 = dx
             p1 = (i * 13 + dx) % 64
             p2 = p1 ^ dx
+            #[BS] in ra cặp bản rõ dạng hex, in ra vi sai đầu vào dạng hex
+            print(f"\n[>] Cặp bản rõ: p1 = {hex(p1)}, p2 = {hex(p2)}, dx = {hex(dx)}")
             
             # Giả lập Oracle trả về bản mã (chứa khóa bí mật)
             c1 = sbox_lookup(p1 ^ secret_key)
             c2 = sbox_lookup(p2 ^ secret_key)
             dy_observed = c1 ^ c2
+            # [BS] in ra vi sai đầu ra (dạng hex)
+            print(f"    Vi sai đầu ra quan sát được: dy = {hex(dy_observed)}")
             
             # Tra cứu các cặp X thỏa mãn sai phân quan sát được
             for x1 in range(64):
@@ -74,6 +85,8 @@ def automated_attack():
                     # Suy ra ứng viên khóa: K = X ^ P
                     k_candidate = x1 ^ p1
                     votes[k_candidate] += 1
+                    #[BS] in ra giá trị x1, và key tương ứng
+                    print(f"    x1 = {hex(x1)} -> key ứng viên = {hex(k_candidate)}")
 
     # 4. Hiển thị kết quả
     print("\n[+] KẾT QUẢ PHÂN TÍCH THỐNG KÊ (VOTING):")
